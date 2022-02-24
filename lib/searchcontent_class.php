@@ -66,7 +66,7 @@ class SearchContent {
        $sr['table']="<b>".$this->table_name."</b>";
        $sr['field']='<b>`'.$this->field[0].'`</b>';
        $sr['id']="<b>".$this->data['id']."</b>";
-       $sr['text']=$data[intval($this->data['id'])-1][$this->field[0]];
+       $sr['text']=$data[intval($this->data['id'])][$this->field[0]];
 
        for($i=0;$i<count($data);$i++){
          $new_sr['id']=$i;
@@ -78,6 +78,28 @@ class SearchContent {
 
        return $this->getReplaceTemplate($sr,'top');
      }
+
+
+     private function getMorphyArray(){
+       $morphywords=$this->firewind->morphyus->get_words( $this->words );
+       $morphywords1=$this->firewind->morphyus->lemmatize( $morphywords );
+       $morphywords2=$this->firewind->morphyus->getAllFormsWithGramInfo( $morphywords );
+   //     $morphywords2=$this->firewind->morphyus->findWord( $morphywords );
+   
+       foreach ($morphywords2 as $key => $value) {
+         for ($i=0;$i<count($value);$i++){
+           if ($key!=='ДЛЯ')   //для этого слова какой то неадекват происходит то что заметил не нужны нам слова ДЛИТЬ например
+           for($j=0;$j<count($value[$i]['forms']);$j++) {
+               if(!in_array($value[$i]['forms'][$j],$morphyarray))
+               $morphyarray[]=$value[$i]['forms'][$j];
+           }
+           else $morphyarray[]='ДЛЯ';
+         }
+       }
+   //        $morphyarray=array_unique($morphyarray);// Отчистить массив от одинаковых элементов
+       return $morphyarray;
+     }
+
 
 
  private function secureData($data){
@@ -143,7 +165,10 @@ class SearchContent {
 // сначала собираем %allfrags% для слайдера, через searchallfrags.tpl без первого фрагмента(0) который будет активным в слайдере.
 //  var_dump($result);exit;
 for($i=0;$i<count($result);$i++){ //если несколько статей имеет фрагменты
-    for($j=1;$j<count($result[$i]['fragments']);$j++){
+    for($j=0;$j<count($result[$i]['fragments']);$j++){
+      if($j==0) $newsr['active']='active';    //первый элемент в каруселе делаем активным через шаблон
+      else $newsr['active']='';
+
       $newsr['frags']=$this->setTeg($result[$i]['fragments'][$j][0],$this->words); // получаем фрагмент с выделенными словами поиска
       $textcarousel .=$this->getReplaceTemplate($newsr,'searchallfrags');
 //          сохраняем этот фрагмент через шаблон searchallfrags
@@ -152,14 +177,14 @@ for($i=0;$i<count($result);$i++){ //если несколько статей и�
     $sr['allfrags']=$textcarousel;  //<div class="carousel-item"> под каждый фрагмент
 //      echo 'sr[allfrags]='.$sr['allfrags']."<hr>"; exit;
 //теперь соберём %mainfrags% через шаблон mainfrags.tpl
-      $sr['id']=$var.$result[$i]['id'];  // должно меняться для каждой статьи или раздела поэтому создаём на основе его ссылки/ это для манипуляторов карусели чтобы каждая карусель отвечала за свои фрагменты, кнопки вперёд назад. фактически это id="carouselExampleControls%id%" в коде html
-      $sr['frags']=$this->setTeg($result[$i]['fragments'][0][0],$this->words);
-//          получаем первый элемент карусели
+      $textcarousel='';
+      $sr['id']=$result[$i]['id'];  // фактически это id="carouselExampleControls%id%" в коде html
+//       $sr['frags']=$this->setTeg($result[$i]['fragments'][0][0],$this->words);
+// //          получаем первый элемент карусели
       $newsr['mainfrags']=$this->getReplaceTemplate($sr,'mainfrags');
-
 //теперь подставляем $newsr['mainfrags'] с досборкой шаблона search_item.tpl
-      $newsr['link']= $this->config->address."?view=$var&amp;id=".$result[$i]['id'];
-      $newsr['title']=$result[$i]['title'];
+      $newsr['link']= $this->config->address."?view=&amp;id=".$result[$i]['id'];
+      $newsr['title']="Вывод поля из базы по 'id'=".$result[$i]['id'];
       $text .= $this->getReplaceTemplate($newsr,'search_item');
     }
 //теперь завершающая сборка вывод в шаблоне search_result.tpl
