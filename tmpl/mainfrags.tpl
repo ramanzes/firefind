@@ -1,10 +1,9 @@
 <div id="carouselExampleControls%id%" class="carousel slide" data-ride="carousel">
+  <!-- Индикаторы -->
+<ol class="carousel-indicators">
+    %indicators%
+</ol>
   <div class="carousel-inner">
-    <!-- <div class="carousel-item active">
-        <h4>...</h4>
-        <p>%frags%</p>
-        <h4>...</h4>
-    </div> -->
     %allfrags%
   </div>
   <a class="carousel-control-prev" href="#carouselExampleControls%id%" role="button" data-slide="prev">

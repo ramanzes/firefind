@@ -6,10 +6,14 @@
 		private $regexp_word   = '/([a-zа-я0-9]+)/ui';
 		private $regexp_entity = '/&([a-zA-Z0-9]+);/';
 
-		public function __construct() {
-			$directory            = __DIR__.'/phpmorphy/dicts';
-			$language             = 'ru_RU';
+		public function __construct($language='ru_RU') {
+			// $directory            = __DIR__.'/phpmorphy/dicts';
+	//	  $language             = 'ru_RU';
 			$options[ 'storage' ] = PHPMORPHY_STORAGE_FILE;
+
+			$directory            = __DIR__.'/phpmorphy/dicts';
+	//		$language            = 'en_EN';
+
 
 			// Инициализация библиотеки //
 			$this->phpmorphy      = new phpMorphy( $directory, $language, $options );

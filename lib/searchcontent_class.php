@@ -4,7 +4,10 @@ require_once "firefind_class.php";
 
 class SearchContent {
     private $words;
-    private $firewind;
+//    private $firewind;
+    public $morphyus_ru;
+    public $morphyus_en;
+
     private $firefind;
     protected $config;
     protected $data;
@@ -15,14 +18,18 @@ class SearchContent {
 
     public function __construct(){
       $this->config = new Config ();
-      require_once $this->config->dir."/firewind/firewind.php";
+    //  require_once $this->config->dir."/firewind/firewind.php";
+      require_once $this->config->dir."/firewind/morphyus.php";
 
       $this->table_name=$this->config->table_name;
       $this->field=$this->config->field;
 
-      if($_SESSION['morphyus']=='checked')
+  //    if($_SESSION['morphyus']=='checked')
 
-      $this->firewind = new firewind();
+    //  $this->firewind = new firewind();
+			$this->morphyus_ru = new morphyus();
+      $this->morphyus_en = new morphyus('en_EN');
+
       $this->firefind = new fireFind($this->table_name);
 
 
@@ -34,7 +41,8 @@ class SearchContent {
 
 
      public function getContent(){
-
+         $sr['debug']=$this->getDebug();
+    //     exit;
           if(!isset($_SESSION)) session_start();
 
          if (isset($_SESSION['withsection']))  //чекбокс расширяющий поиск и по разделам заводится в сессию в index.php при отмеченном чекбоксе. подставляем в main.tml
@@ -47,7 +55,8 @@ class SearchContent {
          // $sr['meta_key']=$this->getKeyWords();
          //
          $sr['top']=$this->getTop();
-         $sr['middle']=$this->getMiddle();
+       $sr['middle']=$this->getMiddle();
+
 
          if (isset($_SESSION['login']))  $sr['login']=$_SESSION['login'];
          else { $sr['login']='';}
@@ -79,23 +88,47 @@ class SearchContent {
        return $this->getReplaceTemplate($sr,'top');
      }
 
+// public function MorphyfindWord($word){
+//
+// return $this->firewind->morphyus->findWord( $word );
+//
+// }
 
      private function getMorphyArray(){
-       $morphywords=$this->firewind->morphyus->get_words( $this->words );
-       $morphywords1=$this->firewind->morphyus->lemmatize( $morphywords );
-       $morphywords2=$this->firewind->morphyus->getAllFormsWithGramInfo( $morphywords );
+
+
+       $morphywords=$this->morphyus_ru->get_words( $this->words );
+
+//пропарсить массив если есть англ. по регулярному выражению сложить в другой массив
+
+    //   $morphywords1=$this->morphyus->lemmatize( $morphywords );
+       $morphywords_ru=$this->morphyus_ru->getAllFormsWithGramInfo( $morphywords );
+       $morphywords_en=$this->morphyus_en->getAllFormsWithGramInfo( $morphywords );
    //     $morphywords2=$this->firewind->morphyus->findWord( $morphywords );
-   
-       foreach ($morphywords2 as $key => $value) {
-         for ($i=0;$i<count($value);$i++){
+   // print_r($morphywords_ru);
+   // echo "<br>";
+   // print_r($morphywords_en);
+   // exit;
+      if(count($morphywords_ru)>0)
+       foreach ($morphywords_ru as $key => $value)
+         for ($i=0;$i<count($value);$i++)
            if ($key!=='ДЛЯ')   //для этого слова какой то неадекват происходит то что заметил не нужны нам слова ДЛИТЬ например
            for($j=0;$j<count($value[$i]['forms']);$j++) {
                if(!in_array($value[$i]['forms'][$j],$morphyarray))
                $morphyarray[]=$value[$i]['forms'][$j];
            }
            else $morphyarray[]='ДЛЯ';
+         
+
+//если есть другой массив для английских букв, то добавляем сюда же
+      if(count($morphywords_en)>0)
+       foreach ($morphywords_en as $key => $value)
+         for ($i=0;$i<count($value);$i++)
+           for($j=0;$j<count($value[$i]['forms']);$j++) {
+               if(!in_array($value[$i]['forms'][$j],$morphyarray))
+               $morphyarray[]=$value[$i]['forms'][$j];
          }
-       }
+
    //        $morphyarray=array_unique($morphyarray);// Отчистить массив от одинаковых элементов
        return $morphyarray;
      }
@@ -155,29 +188,34 @@ class SearchContent {
       else  $morphyarray='';  //обязательно делать это в случае отсутсвия включенного морфиуса
 
           $result = $this->firefind->search($this->table_name,$this->words,$morphyarray,$this->field);
-  //   var_dump($result);
-    // var_dump($result[0]['fragments']);
+
 
     if (!$result) {
       $new_sr['words']=$this->words;
       return $this->getReplaceTemplate($new_sr,'search_notfound');
     }
-// сначала собираем %allfrags% для слайдера, через searchallfrags.tpl без первого фрагмента(0) который будет активным в слайдере.
+// сначала собираем %allfrags% для слайдера, через searchallfrags.tpl уитывая что 0-й будет активным в слайдере.
 //  var_dump($result);exit;
 for($i=0;$i<count($result);$i++){ //если несколько статей имеет фрагменты
     for($j=0;$j<count($result[$i]['fragments']);$j++){
       if($j==0) $newsr['active']='active';    //первый элемент в каруселе делаем активным через шаблон
       else $newsr['active']='';
-
+      //activ будет актуален для двух шаблонов searchallfrags и sliderindicators
       $newsr['frags']=$this->setTeg($result[$i]['fragments'][$j][0],$this->words); // получаем фрагмент с выделенными словами поиска
-      $textcarousel .=$this->getReplaceTemplate($newsr,'searchallfrags');
+      //для
+      //id и $j здесь нужен только sliderindicators
+      $newsr['id']=$result[$i]['id'];
+      $newsr['j']="$j";
+      $textallfrags .=$this->getReplaceTemplate($newsr,'searchallfrags');
+      $textindicators .=$this->getReplaceTemplate($newsr,'sliderindicators');
 //          сохраняем этот фрагмент через шаблон searchallfrags
     }
 
-    $sr['allfrags']=$textcarousel;  //<div class="carousel-item"> под каждый фрагмент
-//      echo 'sr[allfrags]='.$sr['allfrags']."<hr>"; exit;
+    $sr['allfrags']=$textallfrags;  //<div class="carousel-item"> под каждый фрагмент
+    $sr['indicators']=$textindicators;
 //теперь соберём %mainfrags% через шаблон mainfrags.tpl
-      $textcarousel='';
+      $textallfrags='';
+      $textindicators='';
       $sr['id']=$result[$i]['id'];  // фактически это id="carouselExampleControls%id%" в коде html
 //       $sr['frags']=$this->setTeg($result[$i]['fragments'][0][0],$this->words);
 // //          получаем первый элемент карусели
@@ -194,6 +232,20 @@ for($i=0;$i<count($result);$i++){ //если несколько статей и�
     return $this->getReplaceTemplate($new_sr,'search_result');
 
     }
+
+
+    protected function getDebug(){
+  //    $str="Результаты findWord(): ".$this->MorphyfindWord($this->words);
+       //  $morphywords=$this->morphyus->get_words( $this->words );
+       // $str=$this->morphyus->getAllFormsWithGramInfo($morphywords);
+       $str=$this->getMorphyArray();
+    //   $str=$this->morphyus->findWord($morphywords);
+// print_r($str);
+       $str['str']=implode(",",$str);
+//       echo $str;
+    return $this->getReplaceTemplate($str,'debug');
+    }
+
 
     protected function getTemplate($name){
   //     echo $this->config->dir_tmpl.$name.".tpl";

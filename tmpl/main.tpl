@@ -48,6 +48,7 @@
   <div class="clear"></div>
   <hr/>
   %middle%
+  %debug%
   <div id="footer">
   <p>Все права защищены &copy; 2022</p>
   </div>

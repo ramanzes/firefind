@@ -278,7 +278,7 @@ class phpMorphy {
     * @param mixed $type - prediction managment
     * @return phpMorphy_WordDescriptor_Collection
     */
-    function findWord($word, $type = self::NORMAL) {
+    public function findWord($word, $type = self::NORMAL) {
         if(is_array($word)) {
             $result = array();
 
