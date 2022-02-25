@@ -95,15 +95,20 @@ class SearchContent {
 // }
 
      private function getMorphyArray(){
-
+       $reg_en="/[a-z]+/i";
+       $reg_ru="/[а-я]+/i";
 
        $morphywords=$this->morphyus_ru->get_words( $this->words );
 
 //пропарсить массив если есть англ. по регулярному выражению сложить в другой массив
 
     //   $morphywords1=$this->morphyus->lemmatize( $morphywords );
+    
+       if (preg_match($reg_ru, $this->words))
        $morphywords_ru=$this->morphyus_ru->getAllFormsWithGramInfo( $morphywords );
+       else if (preg_match($reg_en, $this->words))
        $morphywords_en=$this->morphyus_en->getAllFormsWithGramInfo( $morphywords );
+
    //     $morphywords2=$this->firewind->morphyus->findWord( $morphywords );
    // print_r($morphywords_ru);
    // echo "<br>";
@@ -118,7 +123,7 @@ class SearchContent {
                $morphyarray[]=$value[$i]['forms'][$j];
            }
            else $morphyarray[]='ДЛЯ';
-         
+
 
 //если есть другой массив для английских букв, то добавляем сюда же
       if(count($morphywords_en)>0)
