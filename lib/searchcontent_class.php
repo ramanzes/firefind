@@ -103,10 +103,10 @@ class SearchContent {
 //пропарсить массив если есть англ. по регулярному выражению сложить в другой массив
 
     //   $morphywords1=$this->morphyus->lemmatize( $morphywords );
-    
+
        if (preg_match($reg_ru, $this->words))
        $morphywords_ru=$this->morphyus_ru->getAllFormsWithGramInfo( $morphywords );
-       else if (preg_match($reg_en, $this->words))
+       if (preg_match($reg_en, $this->words))
        $morphywords_en=$this->morphyus_en->getAllFormsWithGramInfo( $morphywords );
 
    //     $morphywords2=$this->firewind->morphyus->findWord( $morphywords );
